@@ -1,2 +1,2 @@
 # HelloWorld
-GTAV Mods for Client and Server Using FiveM
+GTAV Mods for Server side using FiveM
