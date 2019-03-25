@@ -1,0 +1,8 @@
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\bin\Debug\HelloWorldClient.net.dll
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\bin\Debug\HelloWorldClient.net.pdb
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\bin\Debug\CitizenFX.Core.Client.dll
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\bin\Debug\CitizenFX.Core.dll
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\obj\Debug\HelloWorldClient.csproj.CoreCompileInputs.cache
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\obj\Debug\HelloWorldClient.csproj.CopyComplete
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\obj\Debug\HelloWorldClient.net.dll
+D:\GTAV Development\HelloWorldClient\ClassLibrary1\obj\Debug\HelloWorldClient.net.pdb
