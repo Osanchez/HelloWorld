@@ -5,9 +5,9 @@ using static CitizenFX.Core.Native.API;
 
 namespace HelloWorldServer
 {
-    public class Class1 : BaseScript
+    public class EssentialServer : BaseScript
     {
-        public Class1()
+        public EssentialServer()
         {
             EventHandlers["onClientResourceStart"] += new Action<string>(OnClientResourceStart);
         }
