@@ -111,7 +111,7 @@ namespace HelloWorldClient
                 }
             }), false);
 
-            //Animate Selection
+            //Wanted Level
             RegisterCommand("wanted", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 var choice = "";
@@ -150,7 +150,7 @@ namespace HelloWorldClient
 
             }), false);
 
-
+            //Teleport player to set waypoint
             RegisterCommand("tp", new Action<int, List<object>, string>((source, args, raw) =>
             {
 
