@@ -17,6 +17,8 @@ namespace HelloWorldServer
             if (GetCurrentResourceName() != resourceName) return;
 
             //Vehicle Spawner
+            //Command: /vehicle {model}
+            //Description: Spawns vehicle for entered model and places character inside vehicle if model name exists.
             RegisterCommand("vehicle", new Action<int, List<object>, string>(async (source, args, raw) =>
             {
                 // account for the argument not being passed
@@ -64,6 +66,8 @@ namespace HelloWorldServer
             }), false);
 
             //Give All Weapons
+            //Command: /loadout 
+            //Description: Gives players all weapons not already in their inventory. Also heals player to 100 HP and gives 100 armor.
             RegisterCommand("loadout", new Action<int, List<object>, string>((source, args, raw) =>
             {
 
@@ -112,6 +116,8 @@ namespace HelloWorldServer
             }), false);
 
             //Wanted Level
+            //Command: /wanted {boolean choice} 0 false : 1 true
+            //Description: player will be ignored by police (will not be targeted), cops will not continue spawning (sometimes spawns 1 cop)
             RegisterCommand("wanted", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 var choice = "";
@@ -151,6 +157,9 @@ namespace HelloWorldServer
             }), false);
 
             //Teleport player to set waypoint
+            //Command: /tp 
+            //Description: teleports player to wayPoint on map. Checks for ground level to prevent player from falling under the map. if ground 
+            //level cannot be found will give player a parachute and teleport them to area in sky.
             RegisterCommand("tp", new Action<int, List<object>, string>((source, args, raw) =>
             {
 
