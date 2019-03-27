@@ -1,0 +1,11 @@
+D:\GTAV Development\HelloWorldClient\Client\bin\Debug\Client.net.dll
+D:\GTAV Development\HelloWorldClient\Client\bin\Debug\Client.net.pdb
+D:\GTAV Development\HelloWorldClient\Client\bin\Debug\CitizenFX.Core.dll
+D:\GTAV Development\HelloWorldClient\Client\obj\Debug\Client.csproj.CoreCompileInputs.cache
+D:\GTAV Development\HelloWorldClient\Client\obj\Debug\Client.csproj.CopyComplete
+D:\GTAV Development\HelloWorldClient\Client\obj\Debug\Client.net.dll
+D:\GTAV Development\HelloWorldClient\build\Client.net.dll
+D:\GTAV Development\HelloWorldClient\build\Client.net.pdb
+D:\GTAV Development\HelloWorldClient\Client\obj\Debug\Client.net.pdb
+D:\GTAV Development\HelloWorldClient\build\__resource.lua
+D:\GTAV Development\HelloWorldClient\Client\obj\Debug\Client.csprojAssemblyReference.cache
