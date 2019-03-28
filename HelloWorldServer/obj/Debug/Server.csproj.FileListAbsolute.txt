@@ -4,7 +4,4 @@ D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.csproj.Co
 D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\Debug\Server.net.dll
 D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\Debug\Server.net.pdb
 D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.net.dll
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.net.pdb
 D:\GTAV Development\HelloWorldClient\build\Server.net.dll
-D:\GTAV Development\HelloWorldClient\build\Server.net.pdb
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.csprojAssemblyReference.cache

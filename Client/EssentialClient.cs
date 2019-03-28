@@ -16,26 +16,38 @@ namespace Client
             EventHandlers.Add("GiveAllGuns", new Action(GiveAllGuns));
             EventHandlers.Add("SpawnVehicle", new Action<string>(SpawnVehicleAsync));
             EventHandlers.Add("Teleport", new Action(TeleportPlayer));
+            EventHandlers.Add("Output", new Action<string>(ClientMessage));
 
             Tick += OnTick;
+
+            RegisterCommand("saveme", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                TriggerServerEvent("SaveProfile", source, Game.Player.Name);
+                TriggerEvent("Output");
+            }), false);
         }
 
         private void OnClientResourceStart(string resourceName)
         {
-            Screen.ShowNotification($"~b~Server Info~s~: You are currently on Trihardest's development server!");
-
             if (GetCurrentResourceName() != resourceName) return;
 
             RegisterCommand("info", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                Screen.ShowNotification($"~b~Server Info~s~: You are currently on Trihardest's development server!");
-
+                Screen.ShowNotification($"~b~Server Info~s~: You are currently on Trihardest's development server {Game.Player.Name}!");
             }), false);
 
         }
 
+        //Display client message
+        //Command: called by server
+        //Description: sends server message to specified client
+        private void ClientMessage(string msg)
+        {
+            Screen.ShowNotification($"~b~[Server]~s~: {msg}");
+        }
+
         //No Wanted Levels
-        //Command: called on server start
+        //Command: called on server ticks
         //Description: sets all players on server wanted level to 0 at each tick
         private async Task OnTick()
         {
