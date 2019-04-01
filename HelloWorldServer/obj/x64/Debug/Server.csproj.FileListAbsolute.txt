@@ -1,0 +1,14 @@
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\Server.net.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\Google.Protobuf.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\MySqlConnector.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Buffers.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Memory.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Runtime.CompilerServices.Unsafe.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Threading.Tasks.Extensions.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Buffers.xml
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Memory.xml
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Runtime.CompilerServices.Unsafe.xml
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Threading.Tasks.Extensions.xml
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.csproj.CoreCompileInputs.cache
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.csproj.CopyComplete
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.net.dll

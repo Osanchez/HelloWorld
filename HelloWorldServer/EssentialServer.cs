@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using CitizenFX.Core;
-using static CitizenFX.Core.Native.API;
 using MySql.Data.MySqlClient;
 
-namespace HelloWorldServer
+namespace Server
 {
     public class EssentialServer : BaseScript
     {

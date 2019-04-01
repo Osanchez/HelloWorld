@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.UI;
-using Newtonsoft.Json;
 using static CitizenFX.Core.Native.API;
 
 
@@ -20,7 +18,6 @@ namespace Client
             EventHandlers.Add("GiveAllGuns", new Action(GiveAllGuns));
             EventHandlers.Add("SpawnVehicle", new Action<string>(SpawnVehicleAsync));
             EventHandlers.Add("Teleport", new Action(TeleportPlayer));
-            EventHandlers.Add("Output", new Action<string>(ClientMessage));
 
             Tick += OnTick;
         }
@@ -51,13 +48,11 @@ namespace Client
             RegisterCommand("vehicle", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 var model = "";
-
                 if (args.Count > 0)
                 {
                     model = args[0].ToString();
                 }
                 TriggerEvent("SpawnVehicle", model);
-
             }), false);
 
             //Teleport player
@@ -69,20 +64,12 @@ namespace Client
             }), false);
         }
 
-        //Display client message
-        //Command: called by server
-        //Description: sends server message to specified client
-        private void ClientMessage(string msg)
+            //No Wanted Levels
+            //Command: called on server ticks
+            //Description: sets all players on server wanted level to 0 at each tick
+            private async Task OnTick()
         {
-            Screen.ShowNotification($"~b~[Server]~s~: {msg}");
-        }
-
-        //No Wanted Levels
-        //Command: called on server ticks
-        //Description: sets all players on server wanted level to 0 at each tick
-        private async Task OnTick()
-        {
-            await Delay(0);
+            await Delay(200);
             if (GetPlayerWantedLevel(PlayerId()) != 0)
             {
                 SetPlayerWantedLevel(PlayerId(), 0, false);
@@ -215,44 +202,6 @@ namespace Client
             {
                 Screen.ShowNotification($"~b~[Teleport]~s~: No waypoint is set.");
             }
-        }
-
-        //Displays Notification
-        //Description: Displays parameter text as a notification on client screen
-        private void DisplayNotification(string text)
-        {
-            SetNotificationTextEntry("String");
-            AddTextComponentString(text);
-            DrawNotification(false, false);
-        }
-
-        private void EnableNUI(object arg1, List<object> arg2, string arg3)
-        {
-            dynamic obj = new ExpandoObject();
-            obj.type = "enableui";
-            obj.enable = true;
-
-            SendNuiMessage(JsonConvert.SerializeObject(obj));
-            Debug.WriteLine(JsonConvert.SerializeObject(obj));
-
-            SetNuiFocus(true, true);
-
-        }
-
-        public void RegisterNUICallback(string msg, Func<dynamic, CallbackDelegate> callback)
-        {
-            Debug.WriteLine($"Registering NUI EventHandler for {msg}");
-            RegisterNuiCallbackType(msg);
-
-
-            EventHandlers[$"__cfx_nui:{msg}"] += new Action<dynamic>(body => { callback.Invoke(body); });
-
-        }
-
-        private CallbackDelegate NUI_OnEscape(dynamic arg)
-        {
-            SetNuiFocus(false, false);
-            return null;
         }
 
     }

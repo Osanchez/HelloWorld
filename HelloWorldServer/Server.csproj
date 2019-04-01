@@ -89,6 +89,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y /d "$(TargetPath)" "D:\FXServer\server-data\resources\helloWorld\"</PostBuildEvent>
+    <PostBuildEvent>xcopy /y /d "$(TargetPath)" "D:\FXServer\server-data\resources\essential\"</PostBuildEvent>
   </PropertyGroup>
 </Project>
