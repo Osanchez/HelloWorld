@@ -7,3 +7,12 @@ client_script {
 server_scripts {
 	'Server.net.dll'
 }
+
+ui_page('ui/html/index.html')
+
+files({
+    'ui/html/index.html',
+    'ui/html/script.js',
+    'ui/html/style.css',
+    'ui/html/cursor.png'
+})

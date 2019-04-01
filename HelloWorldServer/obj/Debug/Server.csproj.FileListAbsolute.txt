@@ -1,7 +1,0 @@
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\Debug\CitizenFX.Core.dll
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.csproj.CoreCompileInputs.cache
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.csproj.CopyComplete
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\Debug\Server.net.dll
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\Debug\Server.net.pdb
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\Debug\Server.net.dll
-D:\GTAV Development\HelloWorldClient\build\Server.net.dll

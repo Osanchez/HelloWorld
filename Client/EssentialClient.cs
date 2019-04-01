@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.UI;
+using Newtonsoft.Json;
 using static CitizenFX.Core.Native.API;
 
 
@@ -10,8 +12,10 @@ namespace Client
 {
     public class EssentialClient : BaseScript
     {
+
         public EssentialClient()
         {
+            //events
             EventHandlers["onClientResourceStart"] += new Action<string>(OnClientResourceStart);
             EventHandlers.Add("GiveAllGuns", new Action(GiveAllGuns));
             EventHandlers.Add("SpawnVehicle", new Action<string>(SpawnVehicleAsync));
@@ -19,23 +23,50 @@ namespace Client
             EventHandlers.Add("Output", new Action<string>(ClientMessage));
 
             Tick += OnTick;
-
-            RegisterCommand("saveme", new Action<int, List<object>, string>((source, args, raw) =>
-            {
-                TriggerServerEvent("SaveProfile", source, Game.Player.Name);
-                TriggerEvent("Output");
-            }), false);
         }
 
         private void OnClientResourceStart(string resourceName)
         {
             if (GetCurrentResourceName() != resourceName) return;
 
+            //Server Info
+            //Command: /info
+            //Description: displays server information to player
             RegisterCommand("info", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 Screen.ShowNotification($"~b~Server Info~s~: You are currently on Trihardest's development server {Game.Player.Name}!");
             }), false);
 
+            //Give player all weapons
+            //Command: /loadout
+            //Description: players calls command from server which triggers client event to give player all weapons
+            RegisterCommand("loadout", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                TriggerEvent("GiveAllGuns");
+            }), false);
+
+            //Spawn requested vehicle 
+            //Command: /vehicle {model}
+            //Description: players call command from server which triggers client event to spawn requested model and place player inside
+            RegisterCommand("vehicle", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                var model = "";
+
+                if (args.Count > 0)
+                {
+                    model = args[0].ToString();
+                }
+                TriggerEvent("SpawnVehicle", model);
+
+            }), false);
+
+            //Teleport player
+            //Command: /tp
+            //Description: players call command from server which triggers client event to spawn player at the waypoint set on their world map
+            RegisterCommand("tp", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                TriggerEvent("Teleport");
+            }), false);
         }
 
         //Display client message
@@ -52,7 +83,7 @@ namespace Client
         private async Task OnTick()
         {
             await Delay(0);
-            if(GetPlayerWantedLevel(PlayerId()) != 0)
+            if (GetPlayerWantedLevel(PlayerId()) != 0)
             {
                 SetPlayerWantedLevel(PlayerId(), 0, false);
                 SetPlayerWantedLevelNow(PlayerId(), false);
@@ -185,5 +216,44 @@ namespace Client
                 Screen.ShowNotification($"~b~[Teleport]~s~: No waypoint is set.");
             }
         }
+
+        //Displays Notification
+        //Description: Displays parameter text as a notification on client screen
+        private void DisplayNotification(string text)
+        {
+            SetNotificationTextEntry("String");
+            AddTextComponentString(text);
+            DrawNotification(false, false);
+        }
+
+        private void EnableNUI(object arg1, List<object> arg2, string arg3)
+        {
+            dynamic obj = new ExpandoObject();
+            obj.type = "enableui";
+            obj.enable = true;
+
+            SendNuiMessage(JsonConvert.SerializeObject(obj));
+            Debug.WriteLine(JsonConvert.SerializeObject(obj));
+
+            SetNuiFocus(true, true);
+
+        }
+
+        public void RegisterNUICallback(string msg, Func<dynamic, CallbackDelegate> callback)
+        {
+            Debug.WriteLine($"Registering NUI EventHandler for {msg}");
+            RegisterNuiCallbackType(msg);
+
+
+            EventHandlers[$"__cfx_nui:{msg}"] += new Action<dynamic>(body => { callback.Invoke(body); });
+
+        }
+
+        private CallbackDelegate NUI_OnEscape(dynamic arg)
+        {
+            SetNuiFocus(false, false);
+            return null;
+        }
+
     }
 }
