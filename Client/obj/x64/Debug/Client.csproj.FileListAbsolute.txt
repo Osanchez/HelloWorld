@@ -1,8 +1,8 @@
 D:\GTAV Development\HelloWorldClient\build\__resource.lua
-D:\GTAV Development\HelloWorldClient\build\Client.net.dll
-D:\GTAV Development\HelloWorldClient\build\Client.net.pdb
 D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\Client.csproj.CoreCompileInputs.cache
 D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\Client.csproj.CopyComplete
-D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\Client.net.dll
-D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\Client.net.pdb
+D:\GTAV Development\HelloWorldClient\build\EssentialClient.net.dll
+D:\GTAV Development\HelloWorldClient\build\EssentialClient.net.pdb
+D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\EssentialClient.net.dll
+D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\EssentialClient.net.pdb
 D:\GTAV Development\HelloWorldClient\Client\obj\x64\Debug\Client.csprojAssemblyReference.cache

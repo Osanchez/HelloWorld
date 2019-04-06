@@ -11,4 +11,6 @@ D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Runti
 D:\GTAV Development\HelloWorldClient\HelloWorldServer\bin\x64\Debug\System.Threading.Tasks.Extensions.xml
 D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.csproj.CoreCompileInputs.cache
 D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.csproj.CopyComplete
-D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.net.dll
+D:\GTAV Development\HelloWorldClient\build\EssentialServer.net.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\EssentialServer.net.dll
+D:\GTAV Development\HelloWorldClient\HelloWorldServer\obj\x64\Debug\Server.csprojAssemblyReference.cache

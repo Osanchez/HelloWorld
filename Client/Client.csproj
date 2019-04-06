@@ -7,8 +7,8 @@
     <ProjectGuid>{F71D19FB-04FA-442F-8935-808BA966F972}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Client</RootNamespace>
-    <AssemblyName>Client.net</AssemblyName>
+    <RootNamespace>EssentialClient</RootNamespace>
+    <AssemblyName>EssentialClient.net</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -56,6 +56,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>3</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\x86\Release\</OutputPath>
@@ -69,6 +70,7 @@
   <ItemGroup>
     <Reference Include="CitizenFX.Client">
       <HintPath>.\CitizenFX.Client.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -95,6 +97,6 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y /d "$(TargetPath)" "D:\FXServer\server-data\resources\essential\"</PostBuildEvent>
+    <PostBuildEvent>xcopy /y /d "$(TargetPath)" "D:\FXServer\server-data\resources\helloWorld\"</PostBuildEvent>
   </PropertyGroup>
 </Project>

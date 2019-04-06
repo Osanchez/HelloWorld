@@ -8,6 +8,7 @@ namespace Server
     {
         public EssentialServer()
         {
+            Debug.WriteLine("Server Script Initiated.");
             EventHandlers["SaveProfile"] += new Action<string, string>(SaveProfile);
             EventHandlers["LoadProfile"] += new Action<string, string>(LoadProfile);
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);

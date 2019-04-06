@@ -1,0 +1,6 @@
+D:\GTAV Development\HelloWorldClient\build\__resource.lua
+D:\GTAV Development\HelloWorldClient\build\EssentialClient.net.dll
+D:\GTAV Development\HelloWorldClient\Client\obj\x86\Debug\Client.csproj.CoreCompileInputs.cache
+D:\GTAV Development\HelloWorldClient\Client\obj\x86\Debug\Client.csproj.CopyComplete
+D:\GTAV Development\HelloWorldClient\Client\obj\x86\Debug\EssentialClient.net.dll
+D:\GTAV Development\HelloWorldClient\Client\obj\x86\Debug\Client.csprojAssemblyReference.cache
