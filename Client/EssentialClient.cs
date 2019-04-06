@@ -11,8 +11,9 @@ namespace Client
     public class EssentialClient : BaseScript
     {
         private Dictionary<string, string> emotes = new Dictionary<string, string>(); //emote command, emote name
-        private Dictionary<string, List<string>> animations = new Dictionary<string, List<string>>(); //animation command, <animation_items, animation dictionary, animation-1, animation-2, ... >
+        private Dictionary<string, Dictionary<string, List<string>>> animations = new Dictionary<string, Dictionary<string, List<string>>>(); 
         private bool emotePlaying = false;
+        private bool animationPlaying = false;
         private bool walkEnabled = false;
         private bool holdingObject = false;
         private int object_net = -1;
@@ -68,24 +69,142 @@ namespace Client
             emotes["flashlight"] = "WORLD_HUMAN_SECURITY_SHINE_TORCH";
 
             //add usable animations
-            animations["umbrella"] = new List<string>()
-            {
-                "p_amb_brolly_01", //props
-                "amb@code_human_wander_drinking@beer@male@base", //animation dictionary
-                null, //start animation
-               "static", //base animation
-                null //exit animation
-            };
+            // Dictionary<string, Dictionary<string, List<string>>> animations = new Dictionary<string, Dictionary<string, List<string>>>(); 
 
-            animations["phone"] = new List<string>()
+            //umbrella 
+            animations["umbrella"] = new Dictionary<string, List<string>>();
+            animations["umbrella"].Add("prop", new List<string>()
             {
-                "prop_amb_phone",
-                "amb@world_human_mobile_film_shocking@male@base",
+                "p_amb_brolly_01"
+            });
+            animations["umbrella"].Add("enter", new List<string>()
+            {
+                null, //animation dictionary
+                null //animation name
+            });
+            animations["umbrella"].Add("base", new List<string>()
+            {
+                "amb@code_human_wander_drinking@beer@male@base",
+                "static"
+            });
+            animations["umbrella"].Add("exit", new List<string>()
+            {
                 null,
-                "base",
                 null
-            };
+            });
+            animations["umbrella"].Add("action", new List<string>()
+            {
+                null,
+                null
+            });
 
+            //phone
+            animations["phonep"] = new Dictionary<string, List<string>>();
+            animations["phonep"].Add("prop", new List<string>()
+            {
+                "prop_amb_phone"
+            });
+            animations["phonep"].Add("enter", new List<string>()
+            {
+                "amb@world_human_mobile_film_shocking@male@enter", //animation dictionary
+                "enter" //animation name
+            });
+            animations["phonep"].Add("base", new List<string>()
+            {
+                "amb@world_human_mobile_film_shocking@male@base",
+                "base"
+            });
+            animations["phonep"].Add("exit", new List<string>()
+            {
+                "amb@world_human_mobile_film_shocking@male@exit",
+                "exit"
+            });
+            animations["phonep"].Add("action", new List<string>()
+            {
+                null,
+                null
+            });
+
+            //camera
+            animations["camera"] = new Dictionary<string, List<string>>();
+            animations["camera"].Add("prop", new List<string>()
+            {
+                "prop_pap_camera_01"
+            });
+            animations["camera"].Add("enter", new List<string>()
+            {
+                "amb@world_human_paparazzi@male@enter", //animation dictionary
+                "enter" //animation name
+            });
+            animations["camera"].Add("base", new List<string>()
+            {
+                "amb@world_human_paparazzi@male@base",
+                "base"
+            });
+            animations["camera"].Add("exit", new List<string>()
+            {
+                "amb@world_human_paparazzi@male@exit",
+                "exit"
+            });
+            animations["camera"].Add("action", new List<string>()
+            {
+                null,
+                null
+            });
+
+            //bird
+            animations["bird"] = new Dictionary<string, List<string>>();
+            animations["bird"].Add("prop", new List<string>()
+            {
+                null
+            });
+            animations["bird"].Add("enter", new List<string>()
+            {
+                "anim@mp_player_intselfiethe_bird", //animation dictionary
+                "enter" //animation name
+            });
+            animations["bird"].Add("base", new List<string>()
+            {
+               "anim@mp_player_intselfiethe_bird", //animation dictionary
+                "idle_a" //animation name
+            });
+            animations["bird"].Add("exit", new List<string>()
+            {
+                "anim@mp_player_intselfiethe_bird",
+                "exit"
+            });
+            animations["bird"].Add("action", new List<string>()
+            {
+                null,
+                null
+            });
+
+            //bird2
+            animations["bird2"] = new Dictionary<string, List<string>>();
+            animations["bird2"].Add("prop", new List<string>()
+            {
+                null
+            });
+            animations["bird2"].Add("enter", new List<string>()
+            {
+                null, //animation dictionary
+                null //animation name
+            });
+            animations["bird2"].Add("base", new List<string>()
+            {
+                "anim@mp_player_intupperfinger",
+                "idle_a"
+            });
+            animations["bird2"].Add("exit", new List<string>()
+            {
+                "anim@mp_player_intupperfinger",
+                "exit"
+            });
+            animations["bird2"].Add("action", new List<string>()
+            {
+                null,
+                null
+            });
 
         }
 
@@ -358,6 +477,7 @@ namespace Client
 
             //use emote
             TaskStartScenarioInPlace(Game.PlayerPed.Handle, emotes[emote], 0, true);
+            await Delay(120);
             emotePlaying = true;
             Screen.ShowNotification($"~b~[Emote]~s~: Playing emote {emote}!");
              
@@ -367,7 +487,8 @@ namespace Client
         //Command: /animate {animation_name} 
         //Description: uses entered animation if it exists, animation is usable for moving player.
         //player must use /cancelanimation command to stop animation
-        //currently only supports animations that are all contained within the same dictionary. more complex animations will have to be coded differently
+        //TODO: create condition.wait for animations so that they play completley before thread task continues
+        //TODO: implement action for current animation
         public async void UseAnimationAsync(string animation_command)
         {
             //check if the animation exists
@@ -391,26 +512,61 @@ namespace Client
             }
 
             //load the animation list for the requested animation, save the dictionary name and animation name
-            List<string> animation_list = animations[animation_command];
+            Dictionary<string, List<string>> animation_list = animations[animation_command];
 
-            //get the animation names
-            string object_item = animation_list[0];
-            string animation_dictionary = animation_list[1];
-            string start_animation = animation_list[2];
-            string main_animation = animation_list[3];
-            string finish_animation = animation_list[4];
+            //get the animation props and names
 
-            //load the animation dictionary
-            RequestAnimDict(animation_dictionary);
+            //animation prop
+            string object_item = animation_list["prop"][0];
 
-            //wait until the animation dictionary is loaded
-            while (!HasAnimDictLoaded(animation_dictionary))
+            //start animation
+            string animation_dictionary_enter = animation_list["enter"][0];
+            string enter_animation = animation_list["enter"][1];
+
+            //base animation
+            string animation_dictionary_base = animation_list["base"][0]; ;
+            string base_animation = animation_list["base"][1];
+
+            //exit animation
+            string animation_dictionary_exit = animation_list["exit"][0];
+            string exit_animation = animation_list["exit"][1];
+
+            //action animation
+            string animation_dictionary_action = animation_list["action"][0];
+            string action_animation = animation_list["action"][1];
+
+            //load the animation dictionaries
+            loadAnimationDictionariesAsync(animation_dictionary_enter, animation_dictionary_base, animation_dictionary_exit, animation_dictionary_action);
+
+            //cancel animation if one is currently active
+            if (animationPlaying == true)
             {
-                await Delay(100);
-            }
+                //Cancel animation, play cancel animation if one exists
+                if (exit_animation != null)
+                {
+                    TaskPlayAnim(GetPlayerPed(-1), animation_dictionary_exit, exit_animation, 8.0f, 1.0f, -1, 50, 0.0f, false, false, false);
+                    await Delay(3000);
+                }
 
-            //notify that dictionary loaded
-            Debug.WriteLine("Animation dictionary loaded.");
+                if(holdingObject)
+                {
+                    //get the object being held
+                    var held_object = NetToObj(object_net);
+
+                    DetachEntity(held_object, true, true);
+                    DeleteEntity(ref held_object);
+                    object_net = -1;
+                    holdingObject = false;
+                }
+
+                ClearPedSecondaryTask(GetPlayerPed(-1));
+                walkEnabled = false;
+                animationPlaying = false;
+
+                Screen.ShowNotification($"~b~[Animation]~s~: Canceled last animation, try command again!");
+
+                return;
+            }
 
             //if the animation requires an object, give it to the player
             if (object_item != null)
@@ -431,48 +587,67 @@ namespace Client
                 //notify that dictionary loaded
                 Debug.WriteLine("Model loaded.");
 
-                if (holdingObject)
+
+                SetNetworkIdExistsOnAllMachines(netID, true);
+                NetworkSetNetworkIdDynamic(netID, true);
+                SetNetworkIdCanMigrate(netID, false);
+                AttachEntityToEntity(objectSpawned, GetPlayerPed(PlayerId()), GetPedBoneIndex(GetPlayerPed(PlayerId()), 28422), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, true, true, false, true, 0, true);
+                await Delay(120);
+
+                holdingObject = true;
+                object_net = netID;
+            }
+
+            //play animation
+            // Ped ped, char* animDictionary, char* animationName, float speed, float speedMultiplier, int duration, int flag, float playbackRate, BOOL lockX, BOOL lockY, BOOL lockZ
+            //start with enter animation and go into base animation
+            if(animation_dictionary_enter != null)
+            {
+                TaskPlayAnim(GetPlayerPed(-1), animation_dictionary_enter, enter_animation, 8.0f, 1.0f, -1, 50, 0.0f, false, false, false);
+                await Delay(500);
+            }
+                    
+            TaskPlayAnim(GetPlayerPed(-1), animation_dictionary_base, base_animation, 8.0f, 1.0f, -1, 49, 0.0f, false, false, false); 
+
+            walkEnabled = true;
+            emotePlaying = true;
+            animationPlaying = true;
+            Screen.ShowNotification($"~b~[Animation]~s~: Playing animation {animation_command}!");
+             
+        }
+
+        //load the given animation dictionaries if they are not null
+        private async void loadAnimationDictionariesAsync(string start_dictionary, string base_dictionary, string exit_dictionary, string action_dictionary)
+        {
+            List<string> all_dictionaries = new List<string>()
+            {
+                start_dictionary,
+                base_dictionary, 
+                exit_dictionary, 
+                action_dictionary
+            };
+
+            foreach(string dictionary in all_dictionaries)
+            {
+                if(dictionary != null)
                 {
-                    //get the object being held
-                    var held_object = NetToObj(object_net);
-
-
-                    //Cancel animation, play cancel animation if one exists
-                    if(finish_animation != null)
+                    if(!HasAnimDictLoaded(dictionary))
                     {
-                        TaskPlayAnim(GetPlayerPed(-1), animation_dictionary, finish_animation, 8.0f, 1.0f, -1, 50, 0.0f, false, false, false);
-                        await Delay(500);
+                        RequestAnimDict(dictionary);
+
                     }
 
-                    ClearPedSecondaryTask(GetPlayerPed(-1));
-                    DetachEntity(held_object, true, true);
-                    DeleteEntity(ref held_object);
-                    object_net = -1;
-                    holdingObject = false;
-                    walkEnabled = false;
-                    emotePlaying = false;
-                }
-                else
-                {
-                    SetNetworkIdExistsOnAllMachines(netID, true);
-                    NetworkSetNetworkIdDynamic(netID, true);
-                    SetNetworkIdCanMigrate(netID, false);
-                    AttachEntityToEntity(objectSpawned, GetPlayerPed(PlayerId()), GetPedBoneIndex(GetPlayerPed(PlayerId()), 28422), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, true, true, false, true, 0, true);
-                    await Delay(120);
+                    while (!HasAnimDictLoaded(dictionary))
+                    {
+                        await Delay(100);
+                    }
 
-                    holdingObject = true;
-                    object_net = netID;
+                    //notify that dictionary loaded
+                    Debug.WriteLine($"Animation dictionary {dictionary} loaded.");
 
-                    //play animation
-                    // Ped ped, char* animDictionary, char* animationName, float speed, float speedMultiplier, int duration, int flag, float playbackRate, BOOL lockX, BOOL lockY, BOOL lockZ
-                    TaskPlayAnim(GetPlayerPed(-1), animation_dictionary, main_animation, 8.0f, 1.0f, -1, 49, 0.0f, false, false, false); 
-                    await Delay(120);
-
-                    walkEnabled = true;
-                    emotePlaying = true;
-                    Screen.ShowNotification($"~b~[Animation]~s~: Playing animation {animation_command}!");
                 }
             }
+
         }
 
         //called when players moves while emote is playing
@@ -506,7 +681,7 @@ namespace Client
             }
 
             ClearPedTasksImmediately(Game.PlayerPed.Handle);
-            emotePlaying = false;
+            animationPlaying = false;
             walkEnabled = false;
         }
 
