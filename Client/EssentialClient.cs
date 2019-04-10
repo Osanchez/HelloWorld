@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.UI;
+using Newtonsoft.Json;
 using static CitizenFX.Core.Native.API;
 
 
@@ -10,17 +12,27 @@ namespace Client
 {
     public class EssentialClient : BaseScript
     {
+        private int character_id = -1;
+
         private Dictionary<string, string> emotes = new Dictionary<string, string>(); //emote command, emote name
-        private Dictionary<string, Dictionary<string, List<string>>> animations = new Dictionary<string, Dictionary<string, List<string>>>(); 
+        private Dictionary<string, Dictionary<string, List<string>>> animations = new Dictionary<string, Dictionary<string, List<string>>>();
+
         private bool emotePlaying = false;
         private bool animationPlaying = false;
         private bool walkEnabled = false;
         private bool holdingObject = false;
+
         private int object_net = -1;
+
+        private int money_pocket;
+        private int money_bank;
+
+        private bool guiEnabled = false;
 
         public EssentialClient()
         {
             Debug.WriteLine("Client Script Initiated.");
+
             //events
             EventHandlers["onClientResourceStart"] += new Action<string>(OnClientResourceStart);
             EventHandlers.Add("GiveAllGuns", new Action(GiveAllGuns));
@@ -30,6 +42,11 @@ namespace Client
             EventHandlers.Add("Animate", new Action<string>(UseAnimationAsync));
             EventHandlers.Add("CancelEmoteNow", new Action(CancelEmoteNow));
             EventHandlers.Add("CancelAnimationNow", new Action(CancelAnimation));
+            EventHandlers.Add("GetLoadedPlayer", new Action(GetLoadedPlayer));
+            EventHandlers.Add("SetPlayer", new Action<int, string>(SetPlayer));
+            EventHandlers.Add("BankUI", new Action<bool>(EnableBankingUI));
+            EventHandlers.Add("SetPlayerBalance", new Action<int, int>(SetPlayerBalance));
+
 
             //configuration
             Initialize();
@@ -214,7 +231,37 @@ namespace Client
 
             Debug.WriteLine("Client Commmands Initiated.");
 
+            //disable Native Money UI
+            //Hide Native Money balance UIs
+            RemoveMultiplayerHudCash();
+            RemoveMultiplayerBankCash();
+
+            //load the player from server cache
+            TriggerServerEvent("GetPlayerFromCache");
+            TriggerServerEvent("GetPlayerBalance");
+
+            //register callbacks
+            RegisterNUICallback("escape", EscapeUI);
+
             //commands
+            //Account Balance
+            //Command: /balance
+            //Description: displays current characters account balance
+            RegisterCommand("balance", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                guiEnabled = true; 
+                TriggerEvent("BankUI", guiEnabled);
+            }), false);
+
+            //comand to save player data
+            RegisterCommand("save", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                Vector3 coordinates = GetCurrentLocation();
+                TriggerServerEvent("SaveProfile", character_id, Game.Player.Character.Model, coordinates);
+                Screen.ShowNotification($"~b~[Server]~s~: Character Profile Saved! Model: {Game.Player.Character.Model}");
+
+            }), false);
+
             //Server Info
             //Command: /info
             //Description: displays server information to player
@@ -260,7 +307,7 @@ namespace Client
             {
                 string emote = "";
 
-                if(args.Count > 0)
+                if (args.Count > 0)
                 {
                     emote = args[0].ToString();
                 }
@@ -296,6 +343,14 @@ namespace Client
             {
                 TriggerEvent("CancelAnimationNow");
             }), false);
+
+            //Cancel current animation
+            RegisterCommand("pos", new Action<int, List<object>, string>((source, args, raw) =>
+            {
+                Vector3 current_location = GetCurrentLocation();
+                Debug.WriteLine($"X: {current_location.X}, Y: {current_location.Y}, Z: {current_location.Z}");
+
+            }), false);
         }
 
         //No Wanted Levels
@@ -313,7 +368,7 @@ namespace Client
             }
 
             //cancel emote animation on keypress if walkEnabled emote is not active
-            if(emotePlaying)
+            if (emotePlaying)
             {
                 if ((IsControlPressed(0, 32) || IsControlPressed(0, 33) || IsControlPressed(0, 34) || IsControlPressed(0, 35)) && !walkEnabled)
                 {
@@ -454,7 +509,7 @@ namespace Client
         //Description: uses entered emote if it exists, emote is only usable when player is standing still
         private async void UseEmoteAsync(string emote)
         {
-            
+
             //check if the emote exists
             if (!emotes.ContainsKey(emote))
             {
@@ -463,14 +518,14 @@ namespace Client
             }
 
             //check if player is in vehicle
-            if(IsPedInAnyVehicle(Game.PlayerPed.Handle, true))
+            if (IsPedInAnyVehicle(Game.PlayerPed.Handle, true))
             {
                 Screen.ShowNotification($"~b~[Emote]~s~: get out of vehicle first!");
                 return;
             }
 
             //check if player if holding a weapon, if they are remove it
-            if(IsPedArmed(Game.PlayerPed.Handle, 7))
+            if (IsPedArmed(Game.PlayerPed.Handle, 7))
             {
                 SetCurrentPedWeapon(GetPlayerPed(-1), 0xA2719263, true);
             }
@@ -480,7 +535,7 @@ namespace Client
             await Delay(120);
             emotePlaying = true;
             Screen.ShowNotification($"~b~[Emote]~s~: Playing emote {emote}!");
-             
+
         }
 
         //Use Player Animation
@@ -548,7 +603,7 @@ namespace Client
                     await Delay(3000);
                 }
 
-                if(holdingObject)
+                if (holdingObject)
                 {
                     //get the object being held
                     var held_object = NetToObj(object_net);
@@ -601,19 +656,19 @@ namespace Client
             //play animation
             // Ped ped, char* animDictionary, char* animationName, float speed, float speedMultiplier, int duration, int flag, float playbackRate, BOOL lockX, BOOL lockY, BOOL lockZ
             //start with enter animation and go into base animation
-            if(animation_dictionary_enter != null)
+            if (animation_dictionary_enter != null)
             {
                 TaskPlayAnim(GetPlayerPed(-1), animation_dictionary_enter, enter_animation, 8.0f, 1.0f, -1, 50, 0.0f, false, false, false);
                 await Delay(500);
             }
-                    
-            TaskPlayAnim(GetPlayerPed(-1), animation_dictionary_base, base_animation, 8.0f, 1.0f, -1, 49, 0.0f, false, false, false); 
+
+            TaskPlayAnim(GetPlayerPed(-1), animation_dictionary_base, base_animation, 8.0f, 1.0f, -1, 49, 0.0f, false, false, false);
 
             walkEnabled = true;
             emotePlaying = true;
             animationPlaying = true;
             Screen.ShowNotification($"~b~[Animation]~s~: Playing animation {animation_command}!");
-             
+
         }
 
         //load the given animation dictionaries if they are not null
@@ -622,16 +677,16 @@ namespace Client
             List<string> all_dictionaries = new List<string>()
             {
                 start_dictionary,
-                base_dictionary, 
-                exit_dictionary, 
+                base_dictionary,
+                exit_dictionary,
                 action_dictionary
             };
 
-            foreach(string dictionary in all_dictionaries)
+            foreach (string dictionary in all_dictionaries)
             {
-                if(dictionary != null)
+                if (dictionary != null)
                 {
-                    if(!HasAnimDictLoaded(dictionary))
+                    if (!HasAnimDictLoaded(dictionary))
                     {
                         RequestAnimDict(dictionary);
 
@@ -685,5 +740,107 @@ namespace Client
             walkEnabled = false;
         }
 
+        //gets the current player location: for development
+        public Vector3 GetCurrentLocation()
+        {
+            Vector3 playerCoords = GetEntityCoords(GetPlayerPed(-1), true);
+            Debug.WriteLine($"X: {playerCoords.X}, Y: {playerCoords.Y}, Z: {playerCoords.Z}");
+            return playerCoords;
+        }
+
+        //send currently loaded playerID to server to save
+        private void GetLoadedPlayer()
+        {
+            TriggerServerEvent("SaveProfile", character_id);
+        }
+
+        private async void SetPlayer(int characterID, string character_model)
+        {
+
+            Debug.WriteLine("Loading player profile.");
+
+            if (character_model != "")
+            {
+                var modelhash = (uint)GetHashKey(character_model);
+                RequestModel(modelhash);
+
+                while (!HasModelLoaded(modelhash))
+                {
+                    await Delay(600);
+                }
+
+                SetPlayerModel(Game.Player.Handle, modelhash);
+            }
+
+            character_id = characterID;
+
+            Screen.ShowNotification($"~b~[Server]~s~: Player data loaded successfully!");
+        }
+
+        //updates stored client information with db character balance
+        //actual balance is never stored locally to prevent hackers, this is just a display
+        public void SetPlayerBalance(int pocket, int bank)
+        {
+            this.money_pocket = pocket;
+            this.money_bank = bank;
+        }
+
+        //NUI
+        public async void EnableBankingUI(bool enable)
+        {
+            JsonMessage json = new JsonMessage("enableui", enable);
+
+            json.money_pocket = this.money_pocket;
+            json.money_bank = this.money_bank;
+
+            Debug.WriteLine(JsonConvert.SerializeObject(json));
+
+            SendNuiMessage(JsonConvert.SerializeObject(json));
+        }
+
+        public void RegisterNUICallback(string msg, Func<IDictionary<string, object>, CallbackDelegate, CallbackDelegate> callback)
+        {
+            Debug.WriteLine($"Registering NUI EventHandler for {msg}");
+            RegisterNuiCallbackType(msg);
+            // Remember API calls must be executed on the first tick at the earliest!
+            //Function.Call(Hash.REGISTER_NUI_CALLBACK_TYPE, msg);
+            EventHandlers[$"__cfx_nui:{msg}"] += new Action<ExpandoObject, CallbackDelegate>((body, resultCallback) =>
+            {
+                Console.WriteLine("We has event" + body);
+                callback.Invoke(body, resultCallback);
+            });
+
+            EventHandlers[$"{msg}"] += new Action<ExpandoObject, CallbackDelegate>((body, resultCallback) =>
+            {
+                Console.WriteLine("We has event without __cfx_nui" + body);
+                callback.Invoke(body, resultCallback);
+            });
+
+        }
+
+        internal CallbackDelegate EscapeUI(IDictionary<string, Object> data, CallbackDelegate cb)
+        {
+            Debug.WriteLine("ESCAPING UI");
+            EnableBankingUI(false);
+            guiEnabled = false;
+            return cb;
+        }
+
+    }
+
+    public class JsonMessage
+    {
+        public string type;
+        public bool enable;
+        public int money_pocket;
+        public int money_bank;
+
+        public JsonMessage(string type, bool enable)
+        {
+            this.type = type;
+            this.enable = enable;
+            this.money_pocket = 0;
+            this.money_bank = 0;
+        }
     }
 }
