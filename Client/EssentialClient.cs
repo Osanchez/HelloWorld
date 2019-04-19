@@ -7,8 +7,7 @@ using CitizenFX.Core.UI;
 using Newtonsoft.Json;
 using static CitizenFX.Core.Native.API;
 
-
-namespace Client
+namespace helloworld
 {
     public class EssentialClient : BaseScript
     {
@@ -28,25 +27,35 @@ namespace Client
         private int money_bank;
 
         private bool guiEnabled = false;
+        private bool playerListEnabled = false;
+
+        private bool firstSpawn = true;
 
         public EssentialClient()
         {
-            Debug.WriteLine("Client Script Initiated.");
+            Debug.WriteLine($"Client Script Initiated for player {GetPlayerServerId(-1)}");
 
             //events
             EventHandlers["onClientResourceStart"] += new Action<string>(OnClientResourceStart);
+            EventHandlers["playerSpawned"] += new Action(SpawnInitialize);
             EventHandlers.Add("GiveAllGuns", new Action(GiveAllGuns));
-            EventHandlers.Add("SpawnVehicle", new Action<string>(SpawnVehicleAsync));
+            EventHandlers.Add("SpawnVehicle", new Action<string>(SpawnVehicle));
             EventHandlers.Add("Teleport", new Action(TeleportPlayer));
-            EventHandlers.Add("Emote", new Action<string>(UseEmoteAsync));
-            EventHandlers.Add("Animate", new Action<string>(UseAnimationAsync));
+            EventHandlers.Add("Emote", new Action<string>(UseEmote));
+            EventHandlers.Add("Animate", new Action<string>(UseAnimation));
             EventHandlers.Add("CancelEmoteNow", new Action(CancelEmoteNow));
             EventHandlers.Add("CancelAnimationNow", new Action(CancelAnimation));
             EventHandlers.Add("GetLoadedPlayer", new Action(GetLoadedPlayer));
             EventHandlers.Add("SetPlayer", new Action<int, string>(SetPlayer));
             EventHandlers.Add("BankUI", new Action<bool>(EnableBankingUI));
             EventHandlers.Add("SetPlayerBalance", new Action<int, int>(SetPlayerBalance));
+            EventHandlers.Add("BalanceChange", new Action<string, int>(BalanceChange));
+            EventHandlers.Add("PlayerListUI", new Action<bool, string>(EnablePlayerListGUI));
+			EventHandlers.Add("SetModel", new Action<string>(SetModel));
 
+            //register callbacks
+            RegisterNUICallback("escapebalance", EscapeBalanceUI);
+            RegisterNUICallback("escapeplayerlist", EscapePlayerListUI);
 
             //configuration
             Initialize();
@@ -55,9 +64,61 @@ namespace Client
             Tick += OnTick;
         }
 
+        //No Wanted Levels
+        //Command: called on server ticks
+        //Description: sets all players on server wanted level to 0 at each tick
+        #pragma warning disable 1998
+        private async Task OnTick()
+        {
+            //remove wanted level on tick
+            if (GetPlayerWantedLevel(PlayerId()) != 0)
+            {
+                SetPlayerWantedLevel(PlayerId(), 0, false);
+                SetPlayerWantedLevelNow(PlayerId(), false);
+            }
+
+            //cancel emote animation on keypress if walkEnabled emote is not active
+            if (emotePlaying)
+            {
+                if ((IsControlPressed(0, 32) || IsControlPressed(0, 33) || IsControlPressed(0, 34) || IsControlPressed(0, 35)) && !walkEnabled)
+                {
+                    CancelEmote();
+                }
+            }
+
+            //open the player list menu, this will contain information about all players on the server so that users can send money 
+            if (Game.IsControlJustPressed(0, Control.FrontendLeft))
+            {
+                //enable playerList
+                Debug.WriteLine("Key Pressed");
+                TriggerServerEvent("GetPlayerList");
+            }
+            else if (Game.IsControlJustReleased(0, Control.FrontendLeft))
+            {
+                //disbale playerList
+                Debug.WriteLine("Key Released");
+                EnablePlayerListGUI(false, "");
+            }
+    
+        }
+
         private void Initialize()
         {
-            //add usable emotes
+            //keys
+            Dictionary<string, int> Keys = new Dictionary<string, int>() {
+
+                    ["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57,
+                    ["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177,
+                    ["TAB"] = 37, ["Q"] = 44, ["W"] = 32, ["E"] = 38, ["R"] = 45, ["T"] = 245, ["Y"] = 246, ["U"] = 303, ["P"] = 199, ["["] = 39, ["]"] = 40, ["ENTER"] = 18,
+                    ["CAPS"] = 137, ["A"] = 34, ["S"] = 8, ["D"] = 9, ["F"] = 23, ["G"] = 47, ["H"] = 74, ["K"] = 311, ["L"] = 182,
+                    ["LEFTSHIFT"] = 21, ["Z"] = 20, ["X"] = 73, ["C"] = 26, ["V"] = 0, ["B"] = 29, ["N"] = 249, ["M"] = 244, [","] = 82, ["."] = 81,
+                    ["LEFTCTRL"] = 36, ["LEFTALT"] = 19, ["SPACE"] = 22, ["RIGHTCTRL"] = 70,
+                    ["HOME"] = 213, ["PAGEUP"] = 10, ["PAGEDOWN"] = 11, ["DELETE"] = 178,
+                    ["LEFT"] = 174, ["RIGHT"] = 175, ["TOP"] = 27, ["DOWN"] = 173,
+                    ["NENTER"] = 201, ["N4"] = 108, ["N5"] = 60, ["N6"] = 107, ["N+"] = 96, ["N-"] = 97, ["N7"] = 117, ["N8"] = 61, ["N9"] = 118
+            };
+
+            //emotes
             emotes["smoke"] = "WORLD_HUMAN_SMOKING";
             emotes["cop"] = "WORLD_HUMAN_COP_IDLES";
             emotes["lean"] = "WORLD_HUMAN_LEANING";
@@ -86,8 +147,6 @@ namespace Client
             emotes["flashlight"] = "WORLD_HUMAN_SECURITY_SHINE_TORCH";
 
             //add usable animations
-            // Dictionary<string, Dictionary<string, List<string>>> animations = new Dictionary<string, Dictionary<string, List<string>>>(); 
-
             //umbrella 
             animations["umbrella"] = new Dictionary<string, List<string>>();
             animations["umbrella"].Add("prop", new List<string>()
@@ -114,62 +173,9 @@ namespace Client
                 null,
                 null
             });
+       
 
-            //phone
-            animations["phonep"] = new Dictionary<string, List<string>>();
-            animations["phonep"].Add("prop", new List<string>()
-            {
-                "prop_amb_phone"
-            });
-            animations["phonep"].Add("enter", new List<string>()
-            {
-                "amb@world_human_mobile_film_shocking@male@enter", //animation dictionary
-                "enter" //animation name
-            });
-            animations["phonep"].Add("base", new List<string>()
-            {
-                "amb@world_human_mobile_film_shocking@male@base",
-                "base"
-            });
-            animations["phonep"].Add("exit", new List<string>()
-            {
-                "amb@world_human_mobile_film_shocking@male@exit",
-                "exit"
-            });
-            animations["phonep"].Add("action", new List<string>()
-            {
-                null,
-                null
-            });
-
-            //camera
-            animations["camera"] = new Dictionary<string, List<string>>();
-            animations["camera"].Add("prop", new List<string>()
-            {
-                "prop_pap_camera_01"
-            });
-            animations["camera"].Add("enter", new List<string>()
-            {
-                "amb@world_human_paparazzi@male@enter", //animation dictionary
-                "enter" //animation name
-            });
-            animations["camera"].Add("base", new List<string>()
-            {
-                "amb@world_human_paparazzi@male@base",
-                "base"
-            });
-            animations["camera"].Add("exit", new List<string>()
-            {
-                "amb@world_human_paparazzi@male@exit",
-                "exit"
-            });
-            animations["camera"].Add("action", new List<string>()
-            {
-                null,
-                null
-            });
-
-            //bird
+            //middle finger
             animations["bird"] = new Dictionary<string, List<string>>();
             animations["bird"].Add("prop", new List<string>()
             {
@@ -196,33 +202,6 @@ namespace Client
                 null
             });
 
-            //bird2
-            animations["bird2"] = new Dictionary<string, List<string>>();
-            animations["bird2"].Add("prop", new List<string>()
-            {
-                null
-            });
-            animations["bird2"].Add("enter", new List<string>()
-            {
-                null, //animation dictionary
-                null //animation name
-            });
-            animations["bird2"].Add("base", new List<string>()
-            {
-                "anim@mp_player_intupperfinger",
-                "idle_a"
-            });
-            animations["bird2"].Add("exit", new List<string>()
-            {
-                "anim@mp_player_intupperfinger",
-                "exit"
-            });
-            animations["bird2"].Add("action", new List<string>()
-            {
-                null,
-                null
-            });
-
         }
 
         private void OnClientResourceStart(string resourceName)
@@ -240,25 +219,20 @@ namespace Client
             TriggerServerEvent("GetPlayerFromCache");
             TriggerServerEvent("GetPlayerBalance");
 
-            //register callbacks
-            RegisterNUICallback("escape", EscapeUI);
-
-            //commands
             //Account Balance
             //Command: /balance
             //Description: displays current characters account balance
             RegisterCommand("balance", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                guiEnabled = true; 
-                TriggerEvent("BankUI", guiEnabled);
+                TriggerEvent("BankUI", true);
             }), false);
 
             //comand to save player data
             RegisterCommand("save", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 Vector3 coordinates = GetCurrentLocation();
-                TriggerServerEvent("SaveProfile", character_id, Game.Player.Character.Model, coordinates);
-                Screen.ShowNotification($"~b~[Server]~s~: Character Profile Saved! Model: {Game.Player.Character.Model}");
+                TriggerServerEvent("SaveProfile", character_id, GetEntityModel(Game.PlayerPed.Handle).ToString(), coordinates);
+                Screen.ShowNotification($"~b~[Server]~s~: Character Profile Saved! Model: {GetEntityModel(Game.PlayerPed.Handle).ToString()}");
 
             }), false);
 
@@ -267,13 +241,28 @@ namespace Client
             //Description: displays server information to player
             RegisterCommand("info", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                Screen.ShowNotification($"~b~Server Info~s~: You are currently on Trihardest's development server {Game.Player.Name}!");
+                Screen.ShowNotification($"~b~Server Info~s~: You are currently on Trihardest's development server {GetPlayerServerId(-1)}!");
             }), false);
 
-            //Give player all weapons
-            //Command: /loadout
-            //Description: players calls command from server which triggers client event to give player all weapons
-            RegisterCommand("loadout", new Action<int, List<object>, string>((source, args, raw) =>
+			//Give player all weapons
+			//Command: /loadout
+			//Description: players calls command from server which triggers client event to give player all weapons
+			RegisterCommand("model", new Action<int, List<object>, string>((source, args, raw) =>
+			{
+				string model = "";
+
+				if (args.Count > 0)
+				{
+					model = args[0].ToString();
+				}
+				TriggerEvent("SetModel", model);
+
+			}), false);
+
+			//Give player all weapons
+			//Command: /loadout
+			//Description: players calls command from server which triggers client event to give player all weapons
+			RegisterCommand("loadout", new Action<int, List<object>, string>((source, args, raw) =>
             {
                 TriggerEvent("GiveAllGuns");
             }), false);
@@ -351,32 +340,47 @@ namespace Client
                 Debug.WriteLine($"X: {current_location.X}, Y: {current_location.Y}, Z: {current_location.Z}");
 
             }), false);
-        }
 
-        //No Wanted Levels
-        //Command: called on server ticks
-        //Description: sets all players on server wanted level to 0 at each tick
-        private async Task OnTick()
-        {
-            await Delay(100);
-
-            //remove wanted level on tick
-            if (GetPlayerWantedLevel(PlayerId()) != 0)
+            //Send money to player 
+            RegisterCommand("pay", new Action<int, List<object>, string>((source, args, raw) =>
             {
-                SetPlayerWantedLevel(PlayerId(), 0, false);
-                SetPlayerWantedLevelNow(PlayerId(), false);
-            }
+                int amount = 0;
+                string playerID = "";
 
-            //cancel emote animation on keypress if walkEnabled emote is not active
-            if (emotePlaying)
-            {
-                if ((IsControlPressed(0, 32) || IsControlPressed(0, 33) || IsControlPressed(0, 34) || IsControlPressed(0, 35)) && !walkEnabled)
+                if (args.Count > 1)
                 {
-                    CancelEmote();
+                    playerID = args[0].ToString();
+                    int.TryParse(args[1].ToString(), out amount);
                 }
-            }
 
+                if(amount > 0)
+                {
+                    TriggerServerEvent("SendMoney", playerID, amount);
+                }
+                else
+                {
+                    Screen.ShowNotification($"~b~[Money]~s~: Enter a valid value");
+
+                }
+
+            }), false);
         }
+
+        private void SpawnInitialize()
+        {
+            //Enable PVP
+            NetworkSetFriendlyFireOption(true);
+            SetCanAttackFriendly(PlayerPedId(), true, true);
+
+            //update cache with player slot number
+            if (firstSpawn)
+            {
+                TriggerServerEvent("UpdateCache", Game.Player.Handle.ToString());
+                Screen.ShowNotification($"Your Server slot number is {Game.Player.Handle}!");
+                firstSpawn = false;
+            }
+        }
+
 
         //Give All Weapons
         //Command: /loadout 
@@ -395,9 +399,9 @@ namespace Client
                 }
 
                 //set player health to max
-                if (Game.PlayerPed.Health < 100)
+                if (Game.PlayerPed.Health < 200)
                 {
-                    Game.PlayerPed.Health = 100;
+                    Game.PlayerPed.Health = 200;
                 }
 
                 //set player armour level to max
@@ -422,7 +426,7 @@ namespace Client
         //Vehicle Spawner
         //Command: /vehicle {model}
         //Description: Spawns vehicle for entered model and places character inside vehicle if model name exists.
-        private async void SpawnVehicleAsync(string model)
+        private async void SpawnVehicle(string model)
         {
             if (model.Length == 0)
             {
@@ -487,7 +491,7 @@ namespace Client
 
                 if (!groundFound)
                 {
-                    blipZ = 400F;
+                    blipZ = 800F;
                     GiveDelayedWeaponToPed(Game.PlayerPed.Handle, 0xFBAB5776, 1, false);
                     SetPedCoordsKeepVehicle(Game.PlayerPed.Handle, blipX, blipY, blipZ);
                 }
@@ -507,7 +511,7 @@ namespace Client
         //Use Player Emote
         //Command: /emote {emote_name} 
         //Description: uses entered emote if it exists, emote is only usable when player is standing still
-        private async void UseEmoteAsync(string emote)
+        private async void UseEmote(string emote)
         {
 
             //check if the emote exists
@@ -544,7 +548,7 @@ namespace Client
         //player must use /cancelanimation command to stop animation
         //TODO: create condition.wait for animations so that they play completley before thread task continues
         //TODO: implement action for current animation
-        public async void UseAnimationAsync(string animation_command)
+        public async void UseAnimation(string animation_command)
         {
             //check if the animation exists
             if (!animations.ContainsKey(animation_command))
@@ -754,6 +758,21 @@ namespace Client
             TriggerServerEvent("SaveProfile", character_id);
         }
 
+		private async void SetModel(string character_model)
+		{
+			if (character_model != "")
+			{
+				var modelhash = (uint)GetHashKey(character_model);
+				RequestModel(modelhash);
+
+				while (!HasModelLoaded(modelhash))
+				{
+					await Delay(750);
+				}
+				SetPlayerModel(Game.Player.Handle, modelhash);
+			}
+		}
+
         private async void SetPlayer(int characterID, string character_model)
         {
 
@@ -766,81 +785,134 @@ namespace Client
 
                 while (!HasModelLoaded(modelhash))
                 {
-                    await Delay(600);
+                    await Delay(750);
                 }
 
                 SetPlayerModel(Game.Player.Handle, modelhash);
             }
 
-            character_id = characterID;
+            this.character_id = characterID;
 
             Screen.ShowNotification($"~b~[Server]~s~: Player data loaded successfully!");
+        }
+
+        //Displays balances when there is a change in balance
+        public async void BalanceChange(string action, int amount)
+        {
+            dynamic json = new ExpandoObject();
+            json.type = "balancechange";
+            json.action = action;
+
+            TriggerServerEvent("GetPlayerBalance");
+            await Delay(500); //give the client time to update players balance
+            json.money_pocket = money_pocket;
+            json.money_bank = money_bank;
+            
+            if(action == "add")
+            {
+                json.addAmount = amount.ToString();
+            }
+            else if(action == "subtract")
+            {
+                json.subtractAmount = amount.ToString();
+            }
+
+            Debug.WriteLine(JsonConvert.SerializeObject(json));
+            SendNuiMessage(JsonConvert.SerializeObject(json));
+
         }
 
         //updates stored client information with db character balance
         //actual balance is never stored locally to prevent hackers, this is just a display
         public void SetPlayerBalance(int pocket, int bank)
         {
-            this.money_pocket = pocket;
-            this.money_bank = bank;
+            money_pocket = pocket;
+            money_bank = bank;
         }
 
         //NUI
+        //Player Balance GUI
         public async void EnableBankingUI(bool enable)
         {
-            JsonMessage json = new JsonMessage("enableui", enable);
+            guiEnabled = enable;
 
-            json.money_pocket = this.money_pocket;
-            json.money_bank = this.money_bank;
+            dynamic json = new ExpandoObject();
+            json.type = "enableui";
+            json.enable = enable;
+
+            if (enable)
+            {
+                TriggerServerEvent("GetPlayerBalance");
+                await Delay(500); //give the client time to update players balance
+                json.money_pocket = money_pocket;
+                json.money_bank = money_bank;
+            }
 
             Debug.WriteLine(JsonConvert.SerializeObject(json));
-
             SendNuiMessage(JsonConvert.SerializeObject(json));
         }
 
-        public void RegisterNUICallback(string msg, Func<IDictionary<string, object>, CallbackDelegate, CallbackDelegate> callback)
+        //Player List GUI
+        //todo get playerlist information and send it to the gui
+        public void EnablePlayerListGUI(bool enable, string playerList)
+        { 
+            playerListEnabled = enable;
+
+            //create the json object
+            dynamic json = new ExpandoObject();
+            json.type = "playerlistui";
+            json.enable = enable;
+
+            if (enable == true)
+            {
+                json.playerList = playerList;
+                SendNuiMessage(JsonConvert.SerializeObject(json));
+                Debug.WriteLine($"NUI Message: {JsonConvert.SerializeObject(json)}");
+                Debug.WriteLine($"PlayerList GUI: Enabled");
+            }
+            else
+            {
+                SendNuiMessage(JsonConvert.SerializeObject(json));
+                Debug.WriteLine($"NUI Message: {JsonConvert.SerializeObject(json)}");
+                Debug.WriteLine($"PlayerList GUI: Disabled");
+            }
+        }
+
+        public void RegisterNUICallback(string msg, Func<dynamic, CallbackDelegate> callback)
         {
             Debug.WriteLine($"Registering NUI EventHandler for {msg}");
             RegisterNuiCallbackType(msg);
-            // Remember API calls must be executed on the first tick at the earliest!
-            //Function.Call(Hash.REGISTER_NUI_CALLBACK_TYPE, msg);
-            EventHandlers[$"__cfx_nui:{msg}"] += new Action<ExpandoObject, CallbackDelegate>((body, resultCallback) =>
-            {
-                Console.WriteLine("We has event" + body);
-                callback.Invoke(body, resultCallback);
-            });
 
-            EventHandlers[$"{msg}"] += new Action<ExpandoObject, CallbackDelegate>((body, resultCallback) =>
+            EventHandlers[$"__cfx_nui:{msg}"] += new Action<dynamic>(body =>
             {
-                Console.WriteLine("We has event without __cfx_nui" + body);
-                callback.Invoke(body, resultCallback);
+                Console.WriteLine("We have an event" + body);
+                callback.Invoke(body);
             });
-
         }
 
-        internal CallbackDelegate EscapeUI(IDictionary<string, Object> data, CallbackDelegate cb)
+        private static CallbackDelegate EscapeBalanceUI(dynamic arg)
         {
-            Debug.WriteLine("ESCAPING UI");
-            EnableBankingUI(false);
-            guiEnabled = false;
-            return cb;
+            Debug.WriteLine($"ESCAPING Balance UI, data recieved in post Username:{arg.username} Password:{arg.password}");
+            TriggerEvent("BankUI", false);
+            return null;
         }
 
-    }
+        private static CallbackDelegate EscapePlayerListUI(dynamic arg)
+        {
+            Debug.WriteLine("ESCAPING Playerlist UI");
+            TriggerEvent("PlayerListUI", false);
+            return null;
+        }
+}
 
-    public class JsonMessage
+    public static class DictionaryExtensions
     {
-        public string type;
-        public bool enable;
-        public int money_pocket;
-        public int money_bank;
-
-        public JsonMessage(string type, bool enable)
+        public static T GetVal<T>(this IDictionary<string, object> dict, string key, T defaultVal)
         {
-            this.type = type;
-            this.enable = enable;
-            this.money_pocket = 0;
-            this.money_bank = 0;
+            if (dict.ContainsKey(key))
+                if (dict[key] is T)
+                    return (T)dict[key];
+            return defaultVal;
         }
     }
 }
